@@ -1,0 +1,61 @@
+{
+  "name": "rimworld-sprite-viewer",
+  "version": "0.1.0",
+  "description": "Visual sprite checker for RimWorld modders (bodies, heads, hair, apparel, genes, weapons).",
+  "main": "main.js",
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-packager": "^17.1.2",
+    "electron-builder": "^25.1.8"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/indexer.test.js && node test/dds.test.js && node test/modgen.test.js",
+    "pack:win": "electron-packager . RimWorldSpriteViewer --platform=win32 --arch=x64 --out=dist --overwrite --ignore=^/test --ignore=^/dist",
+    "dist": "electron-builder --publish never"
+  },
+  "license": "MIT",
+  "author": "Havoksygene",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Havoksygene/RimworldModdingTool.git"
+  },
+  "build": {
+    "appId": "com.havoksygene.rimworldmoddingtool",
+    "productName": "RimWorld Modding Tool",
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**",
+      "renderer/**",
+      "README.md",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "RimWorldModdingTool-${version}-${os}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "portable": {
+      "artifactName": "RimWorldModdingTool-${version}-portable.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Utility",
+      "artifactName": "RimWorldModdingTool-${version}-linux.${ext}"
+    }
+  }
+}

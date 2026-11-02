@@ -1,0 +1,37 @@
+'use strict';
+// Floor builder: built floor + natural ground. usage: node test/floors_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const sp = { single: { kind: 'file', id: 'x' } };
+const P = SC.newProject();
+P.meta.name = 'FloorMod';
+P.meta.prefix = 'FM_';
+const f1 = SC.newItem('floor');
+Object.assign(f1, { label: 'Blue Tile', cost: [{ name: 'Steel', value: 2 }], research: 'Stonecutting', color: '#3366cc', sprites: { single: sp } });
+f1.stats.Beauty = 2;
+f1.customStats = [{ name: 'CleaningTimeFactor', value: 0.8 }];
+const f2 = SC.newItem('floor');
+f2.preset = 'natural';
+SC.applyFloorPreset(f2);
+Object.assign(f2, { label: 'Red Dust', sprites: { single: sp } });
+const bad = SC.newItem('floor');
+Object.assign(bad, { label: 'Soil', defName: 'Soil', sprites: { single: sp } });
+P.items = [f1, f2];
+let r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const get = (p) => (r.files.find((f) => f.path === p) || {}).text;
+const a = get('Defs/TerrainDefs/Floor_FM_BlueTile.xml');
+assert(/<TerrainDef ParentName="FloorBase">/.test(a) && /<texturePath>Terrain\/Surfaces\/FloorMod\/FM_BlueTile<\/texturePath>/.test(a), a);
+assert(/<edgeType>Hard/.test(a) && /<Steel>2<\/Steel>/.test(a) && /<Beauty>2/.test(a) && /<CleaningTimeFactor>0.8/.test(a), a);
+assert(/<color>\(51,102,204\)/.test(a) && /<designationCategory>Floors/.test(a) && /<li>Stonecutting<\/li>/.test(a) && /terrainAffordanceNeeded>Light/.test(a), a);
+assert(!/<fertility>/.test(a), 'built floors keep the default fertility');
+const b = get('Defs/TerrainDefs/Floor_FM_RedDust.xml');
+assert(/ParentName="NaturalTerrainBase"/.test(b) && /<edgeType>FadeRough/.test(b) && /<fertility>0.5/.test(b) && /<pathCost>2/.test(b), b);
+assert(/<li>Diggable<\/li>/.test(b) && /<li>Walkable<\/li>/.test(b) && !/designationCategory|costList/.test(b), b);
+assert(r.files.some((f) => f.path === 'Textures/Terrain/Surfaces/FloorMod/FM_BlueTile.png' && f.keep));
+P.items = [bad];
+r = GEN.generate(P);
+assert(r.errors.some((e) => /already has a Terrain/.test(e)), r.errors.join('|'));
+console.log('FLOORS_OK');

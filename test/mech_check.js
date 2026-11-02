@@ -1,0 +1,36 @@
+'use strict';
+// Mechanoids (Biotech). usage: node test/mech_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const P = SC.newProject();
+P.meta.name = 'Iron Legion';
+P.meta.prefix = 'IL_';
+const spr = { south: { kind: 'file', id: 's' }, east: { kind: 'file', id: 'e' }, north: { kind: 'file', id: 'n' } };
+const a = SC.newItem('mech');
+Object.assign(a, { label: 'Rustbucket', sprites: { main: spr }, workTypes: ['Hauling'], customStats: [{ name: 'MarketValue', value: 999 }] });
+a.stats.MoveSpeed = 4.1;
+const b = SC.newItem('mech');
+b.preset = 'heavy';
+SC.applyMechPreset(b);
+Object.assign(b, { label: 'Ironclad', sprites: { main: spr }, isFighter: true });
+const c = SC.newItem('mech');
+Object.assign(c, { label: 'Wild one', sprites: { main: spr }, gestate: false });
+P.items = [a, b, c];
+const r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const t = r.files.find((f) => /Mech_IL_Rustbucket\.xml/.test(f.path)).text;
+assert(/<ThingDef ParentName="BaseMechanoid">/.test(t) && /<mechWeightClass>Light/.test(t) && /<body>Mech_Light/.test(t) && /<MoveSpeed>4.1<\/MoveSpeed>/.test(t) && /<BandwidthCost>1<\/BandwidthCost>/.test(t), t);
+assert(/<mechEnabledWorkTypes>\s*<li>Hauling/.test(t) && /<soundWounded>Pawn_Mech_Militor_Wounded/.test(t) && /<Steel>10<\/Steel>/.test(t) && /<linkedBodyPartsGroup>HeadAttackTool/.test(t), t);
+assert(/<PawnKindDef ParentName="BaseMechanoidKind">/.test(t) && /<race>IL_Rustbucket<\/race>/.test(t) && /Graphic_Multi/.test(t) && /<li>MechanoidGunShortRange/.test(t), t);
+assert(/<RecipeDef ParentName="BaseMechanoidRecipe">/.test(t) && /<formingTicks>120000/.test(t) && /<gestationCycles>1/.test(t) && /<researchPrerequisite>BasicMechtech/.test(t) && /<IL_Rustbucket>1<\/IL_Rustbucket>/.test(t) && /SubcoreBasic/.test(t), t);
+const pa = r.files.find((f) => /Patches\/Mech_IL_Rustbucket/.test(f.path)).text;
+assert(/ThingDef\[defName=&quot;MechGestator&quot;\]\/recipes/.test(pa) && /<li>IL_Rustbucket_Gestate/.test(pa), pa);
+const pb = r.files.find((f) => /Patches\/Mech_IL_Ironclad/.test(f.path)).text;
+assert(/LargeMechGestator/.test(pb), pb);
+const tb = r.files.find((f) => /Mech_IL_Ironclad\.xml/.test(f.path)).text;
+assert(/<mechWeightClass>Heavy/.test(tb) && /<gestationCycles>4/.test(tb) && /HighMechtech/.test(tb), tb);
+assert(!r.files.some((f) => /Patches\/Mech_IL_Wildone/i.test(f.path)), 'no gestation patch');
+assert(r.files.some((f) => /Textures\/Things\/Pawn\/Mechanoid\/IronLegion\/IL_Rustbucket_south\.png/.test(f.path)));
+console.log('MECH_OK');

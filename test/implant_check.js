@@ -1,0 +1,34 @@
+'use strict';
+// Implant builder (item + condition + surgery). usage: node test/implant_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const ref = { single: { kind: 'file', id: 'x' } };
+const P = SC.newProject();
+P.meta.name = 'BionMod';
+P.meta.prefix = 'BM_';
+const a = SC.newItem('implant');
+Object.assign(a, { label: 'Winged Arm', bodyParts: ['Shoulder'], capMods: [{ name: 'Manipulation', value: 0.2 }], painFactor: 0.5, abilities: ['BM_Dash'], drawOnPawn: true, offsetEastX: 0.1, sprites: { single: ref, main: { south: { kind: 'file', id: 'a' }, east: { kind: 'file', id: 'b' }, north: { kind: 'file', id: 'c' } } } });
+const c = SC.newItem('implant');
+Object.assign(c, { label: 'Horse Leg', races: ['Horse', 'Dromedary'], bodyParts: ['Leg'], sprites: { single: ref } });
+const b = SC.newItem('implant');
+Object.assign(b, { label: 'Calm Chip', preset: 'addon', bodyParts: ['Brain'], statFactors: [{ name: 'MentalBreakThreshold', value: 0.8 }], sprites: { single: ref } });
+P.items = [a, b, c];
+const r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const f = r.files.find((q) => q.path === 'Defs/HediffDefs/Implant_BM_WingedArm.xml');
+assert(f, r.files.map((q) => q.path).join('\n'));
+const t = f.text;
+assert(/ParentName="AddedBodyPartBase"/.test(t) && /<partEfficiency>1.25/.test(t) && /<spawnThingOnRemoved>BM_WingedArm/.test(t), t);
+assert(/ParentName="BodyPartBionicBase"/.test(t) && /<recipeMaker>/.test(t) && /<Plasteel>15/.test(t), t);
+assert(/ParentName="SurgeryInstallBodyPartArtificialBase"/.test(t) && /<addsHediff>BM_WingedArm/.test(t) && /<li>Shoulder<\/li>/.test(t), t);
+assert(/<abilities>\s*<li>BM_Dash/.test(t) && /PawnRenderNodeWorker_AttachmentBody/.test(t) && /<dataWest>/.test(t), t);
+const t2 = r.files.find((q) => /Implant_BM_CalmChip/.test(q.path)).text;
+assert(/ParentName="ImplantHediffBase"/.test(t2) && /SurgeryInstallImplantBase/.test(t2) && !/addedPartProps/.test(t2) && /<li>Brain<\/li>/.test(t2), t2);
+for (const s of ['south', 'east', 'north']) assert(r.files.some((q) => q.path.endsWith(`BM_WingedArm_${s}.png`)), 'pawn pic ' + s);
+const t3 = r.files.find((q) => /Implant_BM_HorseLeg/.test(q.path)).text;
+assert(/<recipeUsers Inherit="False">\s*<li>Horse<\/li>\s*<li>Dromedary<\/li>/.test(t3) && /<li>Leg<\/li>/.test(t3), t3);
+assert(/<recipeUsers Inherit="False">\s*<li>Human<\/li>/.test(t), 'human default');
+assert(r.warnings.some((w) => /animals, mechanoids/.test(w.message) && w.item === 'Horse Leg'));
+console.log('IMPLANT_OK');

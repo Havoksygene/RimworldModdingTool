@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <BodyTypeDef>
+    <defName>Starter_Male</defName>
+    <bodyNakedGraphicPath>Things/Pawn/Humanoid/Bodies/Starter_Naked_Male</bodyNakedGraphicPath>
+    <headOffset>(0, 0.34)</headOffset>
+  </BodyTypeDef>
+  <BodyTypeDef>
+    <defName>Starter_Female</defName>
+    <bodyNakedGraphicPath>Things/Pawn/Humanoid/Bodies/Starter_Naked_Female</bodyNakedGraphicPath>
+    <headOffset>(0, 0.33)</headOffset>
+  </BodyTypeDef>
+  <BodyTypeDef>
+    <defName>Starter_Thin</defName>
+    <bodyNakedGraphicPath>Things/Pawn/Humanoid/Bodies/Starter_Naked_Thin</bodyNakedGraphicPath>
+    <headOffset>(0, 0.35)</headOffset>
+  </BodyTypeDef>
+  <BodyTypeDef>
+    <defName>Starter_Fat</defName>
+    <bodyNakedGraphicPath>Things/Pawn/Humanoid/Bodies/Starter_Naked_Fat</bodyNakedGraphicPath>
+    <headOffset>(0, 0.3)</headOffset>
+  </BodyTypeDef>
+  <BodyTypeDef>
+    <defName>Starter_Hulk</defName>
+    <bodyNakedGraphicPath>Things/Pawn/Humanoid/Bodies/Starter_Naked_Hulk</bodyNakedGraphicPath>
+    <headOffset>(0, 0.32)</headOffset>
+  </BodyTypeDef>
+</Defs>

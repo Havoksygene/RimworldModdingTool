@@ -1,0 +1,30 @@
+'use strict';
+// Events. usage: node test/incident_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const P = SC.newProject();
+P.meta.name = 'Weird Sky';
+P.meta.prefix = 'WS_';
+const a = SC.newItem('incident');
+Object.assign(a, { label: 'Blood moon', description: 'A red moon rises.', effect: 'Eclipse', durationDays: '1~2', baseChance: 0.8, minRefireDays: 20, earliestDay: 10, letterDef: 'ThreatSmall', allowedBiomes: ['Tundra'] });
+const b = SC.newItem('incident');
+Object.assign(b, { label: 'Dust fever', description: 'A fever from dust.', effect: 'ColdSnap', durationDays: '2~3' });
+const c = SC.newItem('incident');
+Object.assign(c, { label: 'Moon sickness outbreak', description: 'Many fall ill.', kind: 'disease', hediff: 'WS_MoonSickness', victimFraction: '0.1~0.3', maxVictims: 3, diseaseParts: ['Brain'] });
+const d = SC.newItem('incident');
+Object.assign(d, { label: 'Pet plague', kind: 'disease', diseaseTarget: 'animal', hediff: 'Animal_Flu', description: 'x' });
+P.items = [a, b, c, d];
+const r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const get = (re) => r.files.find((f) => re.test(f.path)).text;
+const ta = get(/Incident_WS_BloodMoon/);
+assert(/<GameConditionDef>[\s\S]*<defName>WS_BloodMoon_Condition[\s\S]*<conditionClass>GameCondition_NoSunlight/.test(ta) && /<canBePermanent>true/.test(ta), ta);
+assert(/<IncidentDef>[\s\S]*<workerClass>IncidentWorker_MakeGameCondition[\s\S]*<gameCondition>WS_BloodMoon_Condition/.test(ta) && /<baseChance>0.8/.test(ta) && /<minRefireDays>20/.test(ta) && /<earliestDay>10/.test(ta) && /<allowedBiomes>\s*<li>Tundra/.test(ta) && /<durationDays>1~2/.test(ta) && /<li>World<\/li>/.test(ta), ta);
+const tb = get(/Incident_WS_DustFever/);
+assert(/IncidentWorker_ColdSnap/.test(tb) && /GameCondition_ColdSnap/.test(tb) && /<allowUnderground>false/.test(tb) && /Map_PlayerHome/.test(tb), tb);
+const tc = get(/Incident_WS_MoonSicknessOutbreak/);
+assert(/<IncidentDef ParentName="DiseaseIncident">/.test(tc) && /<diseaseIncident>WS_MoonSickness/.test(tc) && /<diseaseVictimFractionRange>0.1~0.3/.test(tc) && /<diseaseMaxVictims>3/.test(tc) && /<diseasePartsToAffect>\s*<li>Brain/.test(tc), tc);
+assert(/ParentName="DiseaseAnimalIncident"/.test(get(/Incident_WS_PetPlague/)));
+console.log('INCIDENT_OK');

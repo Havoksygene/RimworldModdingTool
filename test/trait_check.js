@@ -1,0 +1,32 @@
+'use strict';
+// Traits and thoughts. usage: node test/trait_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const P = SC.newProject();
+P.meta.name = 'Quirks';
+P.meta.prefix = 'Q_';
+const t = SC.newItem('trait');
+Object.assign(t, { label: 'night owl', description: '{PAWN_nameDef} is at their best after dark.', commonality: 0.5, conflictingTraits: ['Kind'], exclusionTags: ['Q_Sleep'], statOffsets: [{ name: 'WorkSpeedGlobal', value: 0.15 }], statFactors: [{ name: 'MeleeDodgeChance', value: 1.2 }], skillGains: [{ name: 'Shooting', value: 4 }], disabledWorkTags: ['Social'], socialFightFactor: 2, moodEffect: 3, moodDescription: 'I love the night.' });
+const m = SC.newItem('thought');
+Object.assign(m, { label: 'ate moon cake', description: 'That moon cake was delicious.', kind: 'memory', moodEffect: 8, durationDays: 2, stackLimit: 3 });
+const c = SC.newItem('thought');
+Object.assign(c, { label: 'feeling dreamy', description: 'Everything is soft.', kind: 'condition', hediff: 'Q_DreamHigh', moodEffect: 10 });
+const a = SC.newItem('thought');
+Object.assign(a, { label: 'night lover', description: 'The dark is my friend.', kind: 'always', moodEffect: 4, requiredTraits: ['Q_NightOwl'], nullifyingTraits: ['Nudist'], requiredGenes: ['Q_Moon'] });
+P.items = [t, m, c, a];
+const r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const get = (re) => r.files.find((f) => re.test(f.path)).text;
+const tt = get(/Trait_Q_NightOwl/);
+assert(/<TraitDef>/.test(tt) && /<commonality>0.5/.test(tt) && /<conflictingTraits>\s*<li>Kind/.test(tt) && /<exclusionTags>\s*<li>Q_Sleep/.test(tt), tt);
+assert(/<degreeDatas>\s*<li>\s*<label>night owl/.test(tt) && /<WorkSpeedGlobal>0.15/.test(tt) && /<Shooting>4<\/Shooting>/.test(tt) && /<disabledWorkTags>\s*<li>Social/.test(tt) && /<socialFightChanceFactor>2/.test(tt), tt);
+assert(/<defName>Q_NightOwl_Mood<\/defName>[\s\S]*ThoughtWorker_AlwaysActive[\s\S]*<requiredTraits>\s*<li>Q_NightOwl[\s\S]*<baseMoodEffect>3/.test(tt), tt);
+const tm = get(/Thought_Q_AteMoonCake/);
+assert(/<durationDays>2/.test(tm) && /<stackLimit>3/.test(tm) && !/workerClass/.test(tm) && /<baseMoodEffect>8/.test(tm), tm);
+const tc = get(/Thought_Q_FeelingDreamy/);
+assert(/ThoughtWorker_Hediff/.test(tc) && /<hediff>Q_DreamHigh/.test(tc), tc);
+const ta = get(/Thought_Q_NightLover/);
+assert(/ThoughtWorker_AlwaysActive/.test(ta) && /<nullifyingTraits>\s*<li>Nudist/.test(ta) && /<requiredGenes>\s*<li>Q_Moon/.test(ta), ta);
+console.log('TRAIT_OK');

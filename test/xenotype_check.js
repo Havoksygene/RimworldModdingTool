@@ -1,0 +1,34 @@
+'use strict';
+// Colour genes, forced traits and xenotypes. usage: node test/xenotype_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const sp = { kind: 'file', id: 'x' };
+const P = SC.newProject();
+P.meta.name = 'XenoMod';
+P.meta.prefix = 'XM_';
+const hair = SC.newItem('gene');
+Object.assign(hair, { label: 'Violet Hair', preset: 'hairColor', colorValue: '#8a2be2' });
+SC.applyGenePreset(hair);
+const skin = SC.newItem('gene');
+Object.assign(skin, { label: 'Teal Skin', preset: 'skinColor', colorValue: '#008080' });
+SC.applyGenePreset(skin);
+const tr = SC.newItem('gene');
+Object.assign(tr, { label: 'Gentle Soul', preset: 'effects', forcedTraits: [{ name: 'Kind', value: '' }, { name: 'PsychicSensitivity', value: -2 }], sprites: { icon: { single: sp } } });
+SC.applyGenePreset(tr);
+const xt = SC.newItem('xenotype');
+Object.assign(xt, { label: 'Violetfolk', genes: ['XM_VioletHair', 'XM_TealSkin', 'XM_GentleSoul', 'Delicate'], weight: 5, descriptionShort: 'Violet and gentle.', nameMaker: 'NamerPersonDirtmole_Male', sprites: { icon: { single: sp } } });
+const empty = SC.newItem('xenotype');
+empty.label = 'Nobody';
+P.items = [hair, skin, tr, xt, empty];
+const r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const f = (n) => (r.files.find((q) => q.path.includes(n)) || {}).text;
+const h = f('Gene_XM_VioletHair'), s = f('Gene_XM_TealSkin'), t = f('Gene_XM_GentleSoul'), x = f('Xenotype_XM_Violetfolk');
+assert(/ParentName="GeneHairColorBase"/.test(h) && /<hairColorOverride>\(138, 43, 226\)/.test(h) && /Cosmetic_Hair/.test(h) && !/<iconPath>/.test(h), h);
+assert(/ParentName="GeneSkinColorOverride"/.test(s) && /<skinColorOverride>\(0, 128, 128\)/.test(s), s);
+assert(/<forcedTraits>[\s\S]*<def>Kind<\/def>\s*<\/li>[\s\S]*<def>PsychicSensitivity<\/def>\s*<degree>-2/.test(t), t);
+assert(/<XenotypeDef>/.test(x) && /<li>XM_VioletHair<\/li>/.test(x) && /<li>Delicate<\/li>/.test(x) && /<factionlessGenerationWeight>5/.test(x) && /<inheritable>true/.test(x) && /<descriptionShort>Violet and gentle/.test(x) && /<nameMaker>NamerPersonDirtmole_Male/.test(x) && /<chanceToUseNameMaker>1/.test(x), x);
+assert(r.warnings.some((w) => /No genes chosen/.test(w.message)), 'empty xenotype warns');
+console.log('XENOTYPE_OK');

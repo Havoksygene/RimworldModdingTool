@@ -1,0 +1,47 @@
+'use strict';
+// Own XML files and quick patches. usage: node test/xmlfile_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const P = SC.newProject();
+P.meta.name = 'RawMod';
+P.meta.prefix = 'RM_';
+const mk = (o) => Object.assign(SC.newItem('xmlfile'), { preset: 'quick' }, o);
+const q1 = mk({ label: 'Cheaper Steel', patchOp: 'replace', patchDefName: 'Steel', patchPath: 'statBases/MarketValue', patchValue: '1.5' });
+const q2 = mk({ label: 'Add Cost', patchOp: 'add', patchDefName: 'MyGun', patchPath: 'costList', patchValue: '<Steel>10</Steel>', patchMod: 'Royalty' });
+const q3 = mk({ label: 'Drop Stat', patchOp: 'remove', patchDefName: 'Steel', patchPath: 'statBases/Flammability' });
+const d1 = mk({ label: 'My Defs', preset: 'defs', xmlText: '<ThingDef>\n  <defName>RM_Thing</defName>\n</ThingDef>' });
+const p1 = mk({ label: 'Hand Patch', preset: 'patch', xmlText: '<Operation Class="PatchOperationRemove">\n  <xpath>Defs/ThingDef[defName="Wood"]</xpath>\n</Operation>' });
+const bad = mk({ label: 'Broken', preset: 'defs', xmlText: '<ThingDef><defName>X</ThingDef>' });
+P.items = [q1, q2, q3, d1, p1];
+let r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const f = (n) => (r.files.find((q) => q.path.includes(n)) || {}).text;
+assert(r.files.some((q) => q.path === 'Patches/Own_RM_CheaperSteel.xml'), r.files.map((q) => q.path).join(','));
+assert(/<Operation Class="PatchOperationReplace">\s*<xpath>Defs\/ThingDef\[defName="Steel"\]\/statBases\/MarketValue<\/xpath>\s*<value><MarketValue>1.5<\/MarketValue><\/value>/.test(f('CheaperSteel')), f('CheaperSteel'));
+assert(/PatchOperationFindMod[\s\S]*<li>Royalty<\/li>[\s\S]*<match Class="PatchOperationAdd">[\s\S]*<value><Steel>10<\/Steel><\/value>/.test(f('AddCost')), f('AddCost'));
+assert(/PatchOperationRemove/.test(f('DropStat')) && !/<value>/.test(f('DropStat')));
+assert(/^<\?xml[\s\S]*<Defs>[\s\S]*<defName>RM_Thing[\s\S]*<\/Defs>/.test(f('Own_RM_MyDefs')) && r.files.some((q) => q.path === 'Defs/Own_RM_MyDefs.xml'));
+assert(/<Patch>[\s\S]*<Operation Class="PatchOperationRemove">[\s\S]*<\/Patch>/.test(f('HandPatch')) && r.files.some((q) => q.path === 'Patches/Own_RM_HandPatch.xml'));
+P.items = [bad];
+r = GEN.generate(P);
+assert(r.errors.some((e) => /not valid/.test(e)), 'broken XML is an error');
+// edit preset: stats, ingredients, workbenches, retexture
+const e1 = mk({ label: 'Tweak Sword', preset: 'edit', patchDefName: 'MeleeWeapon_LongSword', eStats: { MarketValue: { v: '500', rm: false }, Beauty: { v: '', rm: true } }, eCost: { Steel: { v: '70', rm: false } }, eBenchAdd: ['TableMachining'], eBenchRemove: ['FueledSmithy'], eResearch: 'Smithing', sprites: { retexOne: { single: { kind: 'file', id: 'x' } } } });
+const e2 = mk({ label: 'Retex Wall', preset: 'edit', patchDefName: 'Wall', sprites: { retexOne: { single: { kind: 'file', id: 'x' } } } });
+const e3 = mk({ label: 'Retex Parka', preset: 'edit', patchDefName: 'Apparel_Parka', sprites: { retexWorn: { south: { kind: 'file', id: 'a' }, east: { kind: 'file', id: 'b' }, north: { kind: 'file', id: 'c' } } } });
+P.items = [e1, e2, e3];
+r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const tx = f('Own_RM_TweakSword');
+assert(/PatchOperationConditional/.test(tx) && /defName="MeleeWeapon_LongSword"\]\/statBases\/MarketValue/.test(tx) && /<MarketValue>500<\/MarketValue>/.test(tx) && /<Steel>70<\/Steel>/.test(tx), tx);
+assert(/PatchOperationRemove" success="Always"/.test(tx) && /statBases\/Beauty/.test(tx) && /recipeUsers\/li\[text\(\)="FueledSmithy"\]/.test(tx) && /<li>TableMachining<\/li>/.test(tx) && /researchPrerequisite>Smithing</.test(tx), tx);
+assert(r.files.some((q) => q.path === 'Textures/Things/Item/Equipment/WeaponMelee/LongSword.png' && q.sprite), 'single retexture path');
+assert(!r.files.some((q) => /Own_RM_RetexWall/.test(q.path)) && !r.files.some((q) => /Wall\.png|Wall_/.test(q.path)), 'unsupported wall: no files');
+assert(r.warnings.some((w) => /cannot be replaced/.test(w.message) && w.item === 'Retex Wall'));
+for (const bt of ['Male', 'Fat']) assert(r.files.some((q) => q.path === `Textures/Things/Pawn/Humanlike/Apparel/Parka/Parka_${bt}_south.png`), 'worn ' + bt);
+P.items = [bad];
+r = GEN.generate(P);
+assert(r.errors.some((e) => /not valid/.test(e)), 'broken XML is an error');
+console.log('XMLFILE_OK');

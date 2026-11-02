@@ -1,0 +1,42 @@
+'use strict';
+// Food, meals and drugs in the item builder. usage: node test/food_check.js
+const assert = require('assert');
+global.window = global;
+const SC = require('../renderer/modschema.js'),
+  GEN = require('../renderer/modgen.js');
+const P = SC.newProject();
+P.meta.name = 'FoodMod';
+P.meta.prefix = 'FM_';
+const spr = { single: { kind: 'file', id: 'x' } };
+const mk = (preset, o) => {
+  const it = SC.newItem('item');
+  it.preset = preset;
+  SC.applyItemPreset(it);
+  return Object.assign(it, { sprites: spr }, o);
+};
+const raw = mk('rawfood', { label: 'Moon Berry' });
+const meal = mk('meal', { label: 'Moon Stew', craftable: true, cost: [{ name: 'FM_MoonBerry', value: 2 }], productCount: 1 });
+meal.stats.Nutrition = 1.1;
+const drug = mk('drug', { label: 'Dream Pill', highHours: 4, highMood: 15, highConsciousness: -0.2, highPain: -0.3, craftable: true, workbenches: ['DrugLab'], cost: [{ name: 'FM_MoonBerry', value: 3 }] });
+P.items = [raw, meal, drug];
+const r = GEN.generate(P);
+assert.deepStrictEqual(r.errors, [], r.errors.join('\n'));
+const get = (re) => r.files.find((f) => re.test(f.path)).text;
+const a = get(/MoonBerry/);
+assert(/ParentName="PlantFoodRawBase"/.test(a) && /<Nutrition>0.05<\/Nutrition>/.test(a) && /<preferability>RawBad/.test(a) && /<daysToRotStart>30/.test(a) && /Graphic_Single/.test(a), a);
+const b = get(/MoonStew/);
+assert(/ParentName="MealBase"/.test(b) && /<Nutrition>1.1<\/Nutrition>/.test(b) && /<foodType>Meal/.test(b) && /<workSpeedStat>CookSpeed/.test(b) && /<workSkill>Cooking/.test(b) && /FueledStove/.test(b) && /<FM_MoonBerry>2/.test(b) && !/unfinishedThingDef/.test(b), b);
+const c = get(/DreamPill/);
+assert(/ParentName="DrugBase"/.test(c) && /IngestionOutcomeDoer_GiveHediff/.test(c) && /<hediffDef>FM_DreamPill_High/.test(c) && /CompProperties_Drug/.test(c) && /<drugCategory>Social/.test(c), c);
+assert(/<HediffDef>[\s\S]*Hediff_High/.test(c) && /<severityPerDay>-6<\/severityPerDay>/.test(c) && /<painOffset>-0.3/.test(c) && /<capacity>Consciousness<\/capacity>\s*<offset>-0.2/.test(c), c);
+assert(/<ThoughtDef>[\s\S]*ThoughtWorker_Hediff[\s\S]*<baseMoodEffect>15/.test(c) && /DrugLab/.test(c) && /DrugSynthesisSpeed/.test(c), c);
+drug.addictive = true;
+drug.addictiveness = 0.1;
+const r2 = GEN.generate(P);
+assert.deepStrictEqual(r2.errors, [], r2.errors.join('\n'));
+const d = r2.files.find((f) => /DreamPill/.test(f.path)).text;
+assert(/<ChemicalDef>[\s\S]*<addictionHediff>FM_DreamPill_Addiction[\s\S]*<toleranceHediff>FM_DreamPill_Tolerance/.test(d), d);
+assert(/<chemical>FM_DreamPill_Chem<\/chemical>\s*<addictiveness>0.1<\/addictiveness>\s*<minToleranceToAddict>0.15/.test(d) && /<toleranceChemical>FM_DreamPill_Chem/.test(d), d);
+assert(/ParentName="DrugToleranceBase"/.test(d) && /ParentName="AddictionBase"/.test(d) && /Hediff_Addiction/.test(d) && /<chemicalNeed>Chemical_FM_DreamPill/.test(d) && /<NeedDef>[\s\S]*Need_Chemical/.test(d), d);
+assert(/<hediff>FM_DreamPill_Addiction<\/hediff>[\s\S]*<baseMoodEffect>-20/.test(d) && /<label>withdrawal<\/label>/.test(d), d);
+console.log('FOOD_OK');

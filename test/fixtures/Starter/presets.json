@@ -1,0 +1,113 @@
+{
+ "Things/Apparel/Starter_Shirt_Male": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Shirt_Female": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Shirt_Thin": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Shirt_Fat": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Shirt_Hulk": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Jacket_Male": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Jacket_Female": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Jacket_Thin": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Jacket_Fat": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Jacket_Hulk": {
+  "kind": "apparel",
+  "slot": "torso",
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Cap": {
+  "kind": "apparel",
+  "slot": "headgear",
+  "followHead": true,
+  "hidesHair": false,
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_Helmet": {
+  "kind": "apparel",
+  "slot": "headgear",
+  "followHead": true,
+  "hidesHair": true,
+  "drawSize": 1.5
+ },
+ "Things/Apparel/Starter_CowboyHat": {
+  "kind": "apparel",
+  "slot": "headgear",
+  "followHead": true,
+  "hidesHair": false,
+  "drawSize": 1.5
+ },
+ "Things/Item/Equipment/Starter_Pistol": {
+  "kind": "weapon",
+  "drawSize": 1.0
+ },
+ "Things/Item/Equipment/Starter_Rifle": {
+  "kind": "weapon",
+  "drawSize": 1.0
+ },
+ "Things/Item/Equipment/Starter_Sword": {
+  "kind": "weapon",
+  "drawSize": 1.0
+ },
+ "Things/Item/Equipment/Starter_Mace": {
+  "kind": "weapon",
+  "drawSize": 1.0
+ },
+ "Things/Pawn/Humanoid/Genes/Starter_CatEars": {
+  "kind": "gene",
+  "drawSize": 1.5,
+  "followHead": true,
+  "tintMode": "hair"
+ },
+ "Things/Pawn/Humanoid/Genes/Starter_Horns": {
+  "kind": "gene",
+  "drawSize": 1.5,
+  "followHead": true,
+  "tintMode": "none"
+ },
+ "Things/Pawn/Humanoid/Genes/Starter_FoxTail": {
+  "kind": "gene",
+  "drawSize": 1.5,
+  "followHead": false,
+  "tintMode": "hair",
+  "behind": {
+   "south": true,
+   "east": true,
+   "north": false,
+   "west": true
+  }
+ }
+}

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>RimWorld Sprite Viewer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- LEFT: game folder + library -->
+  <aside id="left">
+    <section class="card">
+      <h2>Asset folders <button class="info" data-tip="Where the sprites come from&#10;&#10;• Click “Import RimWorld art” to copy the game's own sprites into your Library folders.&#10;• Or add any folder with “Add folder as…” and say what it holds (hair, heads, apparel…).&#10;• .png and .png.dds files work directly. Files named name_south / _east / _north / _west become one sprite.&#10;• Click an asset to see its settings, double-click to put it on the pawn. Ctrl/Shift+click selects several.&#10;• Sprite invisible or upside-down? Open “Tools &amp; backup” and tick “DDS files are upside-down”.">i</button></h2>
+      <div id="gameStatus" class="muted">Looking for RimWorld…</div>
+      <div id="sourceList"></div>
+      <div class="addrow">
+        <button id="btnImportArt" class="primary" title="Copies bodies, heads, hair, beards, apparel, weapons and genes from your RimWorld install (Assets.zip of the game and each DLC) into the Library folders. Safe to run again.">Import RimWorld art</button>
+        <button id="btnImportArtPick" title="Choose the RimWorld folder yourself">…</button>
+      </div>
+      <div class="addrow">
+        <button id="btnGame">Add folder as…</button>
+        <select id="addCat" title="What the sprites in the new folder are. 'Auto' guesses from file names.">
+          <option value="auto">Auto-detect</option>
+          <option value="bodies">Bodies</option>
+          <option value="heads">Heads</option>
+          <option value="hair">Hair</option>
+          <option value="beards">Beards</option>
+          <option value="apparel">Apparel</option>
+          <option value="apparel-body">Apparel: body</option>
+          <option value="apparel-head">Apparel: head</option>
+          <option value="weapons">Weapons</option>
+          <option value="genes">Genes</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="addrow">
+        <button id="btnOpenApp" title="Your app folder: put sprites in Library/<kind> and they appear here automatically">App folder</button>
+        <button id="btnOpenLib">Library</button>
+        <button id="btnOpenMods">Mods</button>
+      </div>
+      <details id="toolsBox">
+        <summary class="small muted">Tools &amp; backup</summary>
+        <label class="small muted" style="display:flex;gap:6px;align-items:center" title="Turn on if DDS sprites appear upside-down"><input type="checkbox" id="flipDds"> DDS files are upside-down</label>
+        <div class="addrow"><button id="btnOvExport" class="small" title="Save your per-asset settings to a file (backup)">Export asset settings</button>
+          <button id="btnOvImport" class="small">Import</button></div>
+        <button id="btnDiag" class="small" title="Copies a report to send me when something looks wrong">Copy diagnostics</button>
+      </details>
+    </section>
+
+    <section class="card grow">
+      <h2>Library</h2>
+      <div id="tabs">
+        <button data-cat="all" class="tab">All</button>
+        <button data-cat="bodies" class="tab active">Bodies</button>
+        <button data-cat="heads" class="tab">Heads</button>
+        <button data-cat="hair" class="tab">Hair</button>
+        <button data-cat="beards" class="tab">Beards</button>
+        <button data-cat="apparel" class="tab">Apparel</button>
+        <button data-cat="weapons" class="tab">Weapons</button>
+        <button data-cat="genes" class="tab">Genes</button>
+        <button data-cat="other" class="tab">Other</button>
+      </div>
+      <input id="search" type="search" placeholder="Filter…">
+      <div id="libCount" class="muted small"></div>
+      <div id="libList"></div>
+      <div id="libPreview"><canvas id="prevCanvas" width="128" height="128"></canvas><span id="prevName" class="small muted"></span></div>
+      <div id="assetEdit" style="display:none"></div>
+    </section>
+  </aside>
+
+  <!-- CENTER: viewport -->
+  <main id="center">
+    <div id="toolbar">
+      <div class="seg" id="facingSeg">
+        <button data-f="south" class="active">South</button>
+        <button data-f="east">East</button>
+        <button data-f="north">North</button>
+        <button data-f="west">West</button>
+      </div>
+      <div class="seg" id="modeSeg">
+        <button data-m="single" class="active">Single</button>
+        <button data-m="sheet">All 4</button>
+        <button data-m="bodies" title="Same pawn and clothes on every body type">Body types</button>
+      </div>
+      <button id="btnUpdate" class="primary updbtn" hidden></button><button id="btnModOpen" title="Turn what you see here into a mod">Mod builder ▸</button>
+      <label>Zoom <input id="zoom" type="range" min="60" max="360" value="170"></label>
+      <label>Background
+        <select id="bg">
+          <option value="checker">Checker</option>
+          <option value="dark">Dark</option>
+          <option value="grass">Grass</option>
+          <option value="floor">Floor</option>
+        </select>
+      </label>
+      <label class="chk"><input id="grid" type="checkbox" checked> Grid</label>
+      <label class="chk" title="RimWorld draws every sprite onto a square, so a rectangular image is stretched in game. Keep this on to see the same thing."><input id="stretch" type="checkbox" checked> Stretch like the game</label>
+      <span class="spacer"></span>
+      <button id="btnOpen">Open project</button>
+      <button id="btnSaveProj">Save project</button>
+      <button id="btnPng">Export PNG</button>
+    </div>
+    <div id="stage"><canvas id="view"></canvas></div>
+    <div id="hint" class="muted small">Drag a layer to move it · arrow keys nudge (Shift = bigger steps) · West mirrors East unless a _west sprite exists</div>
+  </main>
+
+  <!-- RIGHT: pawn + layers + properties -->
+  <aside id="right">
+    <section class="card">
+      <h2>Pawn</h2>
+      <div class="row"><label>Body type</label>
+        <select id="bodyType"><option value="">(none loaded)</option></select></div>
+      <div class="row"><label>Head offset</label>
+        <input id="hoX" type="number" step="0.005" value="0"> <input id="hoZ" type="number" step="0.005" value="0"></div>
+      <div class="row"><label>Skin</label><input id="skin" type="color" value="#e0ac86">
+        <select id="skinPre" title="Skin tone presets"><option value="">presets</option></select></div>
+      <div class="row"><label>Hair</label><input id="hairc" type="color" value="#4a3020">
+        <select id="hairPre" title="Hair colour presets"><option value="">presets</option></select></div>
+      <div id="swapGrid" title="Step through the library without re-adding layers">
+        <span>Body</span><button id="bodyPrev">◀</button><button id="bodyNext">▶</button>
+        <span>Head</span><button id="headPrev">◀</button><button id="headNext">▶</button>
+        <span>Hair</span><button id="hairPrev">◀</button><button id="hairNext">▶</button>
+        <span>Beard</span><button id="beardPrev">◀</button><button id="beardNext">▶</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Layers</h2>
+      <div id="layerList"></div>
+      <div class="row"><button id="btnSort" title="Reorder layers like the game draws them: body, torso apparel, head, genes, hair, headgear, weapon">Sort like the game</button>
+        <span class="muted small">Ctrl+Z / Ctrl+Y undo</span></div>
+      <div class="row">
+        <label class="muted small" for="addKind">Add as</label>
+        <select id="addKind">
+          <option value="apparel">Apparel</option>
+          <option value="gene">Gene / overlay</option>
+          <option value="weapon">Weapon</option>
+          <option value="hair">Hair</option>
+          <option value="beard">Beard</option>
+          <option value="head">Head</option>
+          <option value="body">Body</option>
+        </select>
+        <button id="btnAddFile">Add from file…</button>
+      </div>
+    </section>
+
+    <section class="card grow" id="props">
+      <h2>Selected layer</h2>
+      <div id="propsBody" class="muted">Select a layer.</div>
+    </section>
+  </aside>
+</div>
+<div id="modView" hidden>
+  <header id="modHead">
+    <button id="btnUpdate2" class="primary updbtn" hidden></button><button id="btnModBack">◂ Back to viewer</button>
+    <strong>Mod builder</strong>
+    <button class="info" data-tip="Builds mods for apparel, weapons, buildings, hair, beards, heads and bodies.&#10;&#10;The XML follows the vanilla 1.7 definitions but has not been tested in the game yet. If the game reports an error, send me the log.">i</button>
+    <span style="flex:1"></span>
+    <button id="btnModUndo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button><button id="btnModRedo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button><button id="btnModNew">New</button><button id="btnModLoad">Open…</button><button id="btnModSave">Save project</button>
+    <button id="btnModExport" class="primary" style="margin:0;width:auto">Export mod folder…</button>
+  </header>
+  <div id="modGrid">
+    <aside class="modCol">
+      <section class="card"><details id="modMetaBox" open><summary><h2 style="display:inline">Mod</h2> <span class="small muted" id="modMetaSum"></span></summary><div id="modMeta"></div></details></section>
+      <section class="card"><h2>Items</h2><div class="btnrow" id="modAdd"></div><input id="modFilter" type="search" placeholder="Filter items…" hidden><div id="modItems"></div></section>
+    </aside>
+    <main class="modCol" id="modForm"></main>
+    <aside class="modCol"><section class="card"><div class="tabs" id="modTabs"><button data-tab="check" class="on">Check &amp; preview</button><button data-tab="log">Game log</button></div><div id="modOut"></div><div id="modLog" hidden></div></section></aside>
+  </div>
+</div>
+<script src="dds.js"></script>
+<script src="gamedata.js"></script>
+<script src="defdata.js"></script>
+<script src="modschema.js"></script>
+<script src="modgen.js"></script>
+<script src="core.js"></script>
+<script src="layers.js"></script>
+<script src="render.js"></script>
+<script src="library.js"></script>
+<script src="panels.js"></script>
+<script src="interaction.js"></script>
+<script src="project.js"></script>
+<script src="startup.js"></script>
+<script src="help.js"></script>
+<script src="picker.js"></script>
+<script src="modui.js"></script>
+<script src="modsprites.js"></script>
+<script src="modcontrols.js"></script>
+<script src="loganalyzer.js"></script>
+<script src="modbiome.js"></script>
+<script src="modbuilder.js"></script>
+<script src="modlog.js"></script>
+<script src="updatebtn.js"></script>
+</body>
+</html>
