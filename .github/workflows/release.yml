@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      - name: Install Pillow (the tests draw small test images with Python)
+        run: python3 -m pip install --break-system-packages pillow || python3 -m pip install pillow
       - name: Run tests (a failure is shown as an annotation with the last output lines)
         run: |
           fail=0
