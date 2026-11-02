@@ -18,7 +18,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: node test/indexer.test.js && node test/dds.test.js && node test/modgen.test.js && node test/update_check.js
+      - name: Run tests (a failure is shown as an annotation with the last output lines)
+        run: |
+          fail=0
+          for t in indexer.test dds.test modgen.test update_check; do
+            if ! out=$(node test/$t.js 2>&1); then
+              echo "::error title=$t failed::$(echo "$out" | tail -12 | tr '\n' '|')"
+              fail=1
+            fi
+          done
+          exit $fail
 
   windows:
     needs: test
